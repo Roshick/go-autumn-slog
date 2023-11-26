@@ -19,7 +19,7 @@ type Logging struct {
 	logger *slog.Logger
 }
 
-func NewLogging() *Logging {
+func New() *Logging {
 	return &Logging{}
 }
 
