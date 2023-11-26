@@ -82,4 +82,49 @@ by, for instance, 'PANIC' being emitted as 'ERROR+8'.
 
 ## Examples
 
-Under construction
+This section delves into practical use cases to aid the integration of the library into various applications.
+
+### Tracing
+
+Consider a scenario where we aim to append tracing information to every log record generated during a request to one of
+our services. Assuming we have incorporated a middleware (either third-party or self-written) that appends a trace-id
+and span-id to our context, the next step is to propagate this information to our logger.
+
+With this library, there are essentially two recommended approaches to achieve our goal.
+
+#### The Middleware Approach
+
+If we can register our middleware to execute after the one responsible for adding tracing information, and if this
+information remains constant throughout the context's lifetime, we can directly include this data into a sub-logger
+within our middleware and attach it to our context:
+
+```
+myLogger := logging.FromContext(ctx)
+if myLogger != nil {
+    // if context has no logger attached, obtain logger (e.g. from slog.Default, logging instance or simply create a new one)
+    myHandler := slog.NewJSONHandler(os.Stdout, nil)
+    myLogger = slog.New(myHandler)
+}
+myLogger = myLogger.With("trace-id", ctx.Value("trace-id"), "span-id", ctx.Value("span-id"))
+ctx = logging.ContextWithLogger(ctx, myLogger)
+```
+
+#### The Callback Handler Approach
+
+If the information within the context might change during its lifetime, opting for the callback handler, despite being
+slightly slower, offers a safer solution.
+
+```
+myHandler := slog.NewJSONHandler(os.Stdout, nil)
+myCallbackHandler := callbackhandler.New(myHandler)
+err := myCallbackHandler.RegisterContextCallback(func(ctx context.Context, record *slog.Record) error {
+    record.Add("span-id", ctx.Value("span-id"), "request-id", ctx.Value("request-id"))
+    return nil
+}, "add-tracing-attributes")
+if err != nil {
+    return err
+}
+myLogger := slog.New(myCallbackHandler)
+// use logger as slog.Default, add it to our logging instance or attach it to a context
+slog.SetDefault(myLogger)
+```
