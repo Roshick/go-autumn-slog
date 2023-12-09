@@ -1,6 +1,6 @@
 module github.com/Roshick/go-autumn-slog
 
-go 1.21.4
+go 1.21
 
 require (
 	github.com/StephanHCB/go-autumn-config-api v0.2.1

@@ -20,7 +20,9 @@ type Logging struct {
 }
 
 func New() *Logging {
-	return &Logging{}
+	return &Logging{
+		logger: slog.Default(), // ensure non-nil
+	}
 }
 
 func (l *Logging) WithLogger(logger *slog.Logger) *Logging {

@@ -84,6 +84,41 @@ by, for instance, 'PANIC' being emitted as 'ERROR+8'.
 
 This section delves into practical use cases to aid the integration of the library into various applications.
 
+### Simple Plaintext Logging
+
+```
+	// create a simple plaintext logger and set the autumn global default logger to it
+	aulogging.Logger = logging.New()
+
+	// use it
+	aulogging.Logger.NoCtx().Info().Print("hello")
+```
+
+### Structured JSON Logging and Context Awareness
+
+```
+	// build a structured logger using the standard slog.NewJSONHandler (could use any other slog.Handler)
+	structuredLogger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+
+	// set the autumn global default logger to it
+	aulogging.Logger = logging.New().WithLogger(structuredLogger)
+
+	// use it (chain style or convenience style)
+	aulogging.Logger.NoCtx().Info().Print("hello")
+	aulogging.Info(context.Background(), "hello, too")
+
+	// augment the logger with an extra field (could be done in a middleware, as long as the field value won't change)
+	augmentedLogger := structuredLogger.With("some-field", "some-value")
+
+	// place it in a context (could be done in a middleware)
+	ctx := context.Background()
+	ctx = logging.ContextWithLogger(ctx, augmentedLogger)
+
+	// use it from the context (chain style or convenience style)
+	aulogging.Logger.Ctx(ctx).Info().Print("hi")
+	aulogging.Info(ctx, "hi, again")
+```
+
 ### Tracing
 
 Consider a scenario where we aim to append tracing information to every log record generated during a request to one of
