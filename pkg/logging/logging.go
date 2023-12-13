@@ -20,9 +20,7 @@ type Logging struct {
 }
 
 func New() *Logging {
-	return &Logging{
-		logger: slog.Default(), // ensure non-nil
-	}
+	return &Logging{}
 }
 
 func (l *Logging) WithLogger(logger *slog.Logger) *Logging {
@@ -32,19 +30,20 @@ func (l *Logging) WithLogger(logger *slog.Logger) *Logging {
 }
 
 func (l *Logging) Logger() *slog.Logger {
-	return l.logger
-}
-
-func (l *Logging) Ctx(ctx context.Context) auloggingapi.ContextAwareLoggingImplementation {
-	currentLogger := FromContext(ctx)
-	if currentLogger == nil {
-		currentLogger = l.logger
-	}
+	currentLogger := l.logger
 	if currentLogger == nil {
 		currentLogger = slog.Default()
 	}
 	if currentLogger == nil {
 		currentLogger = slog.New(noophandler.New())
+	}
+	return currentLogger
+}
+
+func (l *Logging) Ctx(ctx context.Context) auloggingapi.ContextAwareLoggingImplementation {
+	currentLogger := FromContext(ctx)
+	if currentLogger == nil {
+		currentLogger = l.Logger()
 	}
 	return &withContext{
 		Logging: l.WithLogger(currentLogger),
@@ -53,13 +52,7 @@ func (l *Logging) Ctx(ctx context.Context) auloggingapi.ContextAwareLoggingImple
 }
 
 func (l *Logging) NoCtx() auloggingapi.ContextAwareLoggingImplementation {
-	currentLogger := l.logger
-	if currentLogger == nil {
-		currentLogger = slog.Default()
-	}
-	if currentLogger == nil {
-		currentLogger = slog.New(noophandler.New())
-	}
+	currentLogger := l.Logger()
 	return &withContext{
 		Logging: l.WithLogger(currentLogger),
 		ctx:     nil,
