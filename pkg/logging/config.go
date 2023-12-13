@@ -1,11 +1,10 @@
-package handleroptions
+package logging
 
 import (
 	"encoding/json"
+	"github.com/Roshick/go-autumn-slog/pkg/level"
 	"log/slog"
 	"time"
-
-	"github.com/Roshick/go-autumn-slog/pkg/level"
 
 	auconfigapi "github.com/StephanHCB/go-autumn-config-api"
 )
@@ -23,12 +22,16 @@ type Config struct {
 	vTimestampTransformer    TimestampTransformer
 }
 
-func NewDefaultConfig() *Config {
+func NewConfig() *Config {
 	return &Config{
 		vTimestampTransformer: func(timestamp time.Time) time.Time {
 			return timestamp.UTC()
 		},
 	}
+}
+
+func (c *Config) LogLevel() slog.Level {
+	return c.vLogLevel
 }
 
 func (c *Config) SetTimestampTransformer(transformer TimestampTransformer) {
@@ -43,7 +46,6 @@ func (c *Config) HandlerOptions() *slog.HandlerOptions {
 		if attr.Key == slog.LevelKey {
 			logLevel := attr.Value.Any().(slog.Level)
 			attr.Value = slog.StringValue(level.LevelToString(logLevel))
-
 		}
 		if mappedKey, ok := c.vLogAttributeKeyMappings[attr.Key]; ok {
 			attr.Key = mappedKey

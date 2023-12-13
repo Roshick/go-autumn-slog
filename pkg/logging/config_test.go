@@ -1,20 +1,20 @@
-package handleroptions_test
+package logging_test
 
 import (
 	"bytes"
+	"github.com/Roshick/go-autumn-slog/pkg/level"
+	"github.com/Roshick/go-autumn-slog/pkg/logging"
 	"log/slog"
 	"testing"
 	"time"
 
-	"github.com/Roshick/go-autumn-slog/pkg/handleroptions"
-	"github.com/Roshick/go-autumn-slog/pkg/level"
 	"github.com/stretchr/testify/assert"
 )
 
 func getter(key string) string {
 	values := map[string]string{
-		handleroptions.DefaultKeyLogLevel: "FATAL",
-		handleroptions.DefaultKeyLogAttributeKeyMappings: `
+		logging.DefaultKeyLogLevel: "FATAL",
+		logging.DefaultKeyLogAttributeKeyMappings: `
 			{
 				"time": "@timestamp"
 			}
@@ -24,7 +24,7 @@ func getter(key string) string {
 }
 
 func TestObtainDefaultConfig_TextHandler(t *testing.T) {
-	config := handleroptions.NewDefaultConfig()
+	config := logging.NewConfig()
 
 	err := config.ObtainValues(getter)
 	assert.NoError(t, err)
@@ -41,7 +41,7 @@ func TestObtainDefaultConfig_TextHandler(t *testing.T) {
 }
 
 func TestObtainDefaultConfig_JSONHandler(t *testing.T) {
-	config := handleroptions.NewDefaultConfig()
+	config := logging.NewConfig()
 
 	err := config.ObtainValues(getter)
 	assert.NoError(t, err)
