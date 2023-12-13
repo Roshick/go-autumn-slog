@@ -2,6 +2,7 @@ package logging
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/Roshick/go-autumn-slog/pkg/level"
 	"log/slog"
 	"time"
@@ -10,38 +11,31 @@ import (
 )
 
 const (
-	DefaultKeyLogLevel                = "LOG_LEVEL"
-	DefaultKeyLogAttributeKeyMappings = "LOG_ATTRIBUTE_KEY_MAPPINGS"
+	DefaultConfigKeyLevel                = "LOG_LEVEL"
+	DefaultConfigKeyTimeTransformer      = "LOG_TIME_TRANSFORMER"
+	DefaultConfigKeyAttributeKeyMappings = "LOG_ATTRIBUTE_KEY_MAPPINGS"
 )
 
-type TimestampTransformer func(time.Time) time.Time
+type TimeTransformer func(time.Time) time.Time
 
 type Config struct {
 	vLogLevel                slog.Level
 	vLogAttributeKeyMappings map[string]string
-	vTimestampTransformer    TimestampTransformer
+	vTimeTransformer         TimeTransformer
 }
 
 func NewConfig() *Config {
-	return &Config{
-		vTimestampTransformer: func(timestamp time.Time) time.Time {
-			return timestamp.UTC()
-		},
-	}
+	return &Config{}
 }
 
 func (c *Config) LogLevel() slog.Level {
 	return c.vLogLevel
 }
 
-func (c *Config) SetTimestampTransformer(transformer TimestampTransformer) {
-	c.vTimestampTransformer = transformer
-}
-
 func (c *Config) HandlerOptions() *slog.HandlerOptions {
 	replaceAttr := func(_ []string, attr slog.Attr) slog.Attr {
 		if attr.Key == slog.TimeKey {
-			attr.Value = slog.TimeValue(c.vTimestampTransformer(attr.Value.Time()))
+			attr.Value = slog.TimeValue(c.vTimeTransformer(attr.Value.Time()))
 		}
 		if attr.Key == slog.LevelKey {
 			logLevel := attr.Value.Any().(slog.Level)
@@ -62,16 +56,24 @@ func (c *Config) HandlerOptions() *slog.HandlerOptions {
 func (c *Config) ConfigItems() []auconfigapi.ConfigItem {
 	return []auconfigapi.ConfigItem{
 		{
-			Key:         DefaultKeyLogLevel,
-			EnvName:     DefaultKeyLogLevel,
-			Default:     "INFO",
-			Description: "Minimum level of all logs.",
-			Validate:    auconfigapi.ConfigNeedsNoValidation,
+			Key:     DefaultConfigKeyLevel,
+			EnvName: DefaultConfigKeyLevel,
+			Default: "INFO",
+			Description: "Minimum level of all logs. \n" +
+				"Supported values: TRACE, DEBUG, INFO, WARN, ERROR, FATAL, PANIC, SILENT",
+			Validate: auconfigapi.ConfigNeedsNoValidation,
 		}, {
-			Key:     DefaultKeyLogAttributeKeyMappings,
-			EnvName: DefaultKeyLogAttributeKeyMappings,
+			Key:     DefaultConfigKeyTimeTransformer,
+			EnvName: DefaultConfigKeyTimeTransformer,
+			Default: "UTC",
+			Description: "Type of transformation applied to each record's timestamp. Useful for testing purposes. \n" +
+				"Supported values: UTC, ZERO",
+			Validate: auconfigapi.ConfigNeedsNoValidation,
+		}, {
+			Key:     DefaultConfigKeyAttributeKeyMappings,
+			EnvName: DefaultConfigKeyAttributeKeyMappings,
 			Default: "{}",
-			Description: "Mappings for attribute keys of all logs. " +
+			Description: "Mappings for attribute keys of all logs. \n" +
 				"Example: The entry [error: error.message] maps every attribute with key \"error\" to use the key \"error.message\" instead.",
 			Validate: auconfigapi.ConfigNeedsNoValidation,
 		},
@@ -79,19 +81,40 @@ func (c *Config) ConfigItems() []auconfigapi.ConfigItem {
 }
 
 func (c *Config) ObtainValues(getter func(string) string) error {
-	if vLogLevel, err := level.ParseLogLevel(getter(DefaultKeyLogLevel)); err != nil {
+	if vLogLevel, err := level.ParseLogLevel(getter(DefaultConfigKeyLevel)); err != nil {
 		return err
 	} else {
 		c.vLogLevel = vLogLevel
 	}
 
-	if vLogAttributeKeyMappings, err := parseLogAttributeKeyMappings(getter(DefaultKeyLogAttributeKeyMappings)); err != nil {
+	if vTimeTransformer, err := parseTimeTransformer(getter(DefaultConfigKeyTimeTransformer)); err != nil {
+		return err
+	} else {
+		c.vTimeTransformer = vTimeTransformer
+	}
+
+	if vLogAttributeKeyMappings, err := parseLogAttributeKeyMappings(getter(DefaultConfigKeyAttributeKeyMappings)); err != nil {
 		return err
 	} else {
 		c.vLogAttributeKeyMappings = vLogAttributeKeyMappings
 	}
 
 	return nil
+}
+
+func parseTimeTransformer(value string) (TimeTransformer, error) {
+	switch value {
+	case "UTC":
+		return func(timestamp time.Time) time.Time {
+			return timestamp.UTC()
+		}, nil
+	case "ZERO":
+		return func(_ time.Time) time.Time {
+			return time.Time{}
+		}, nil
+	default:
+		return nil, fmt.Errorf("invalid time transformer: '%s'", value)
+	}
 }
 
 func parseLogAttributeKeyMappings(value string) (map[string]string, error) {
