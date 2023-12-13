@@ -17,25 +17,25 @@ const (
 
 type TimestampTransformer func(time.Time) time.Time
 
-type DefaultConfigImpl struct {
+type Config struct {
 	vLogLevel                slog.Level
 	vLogAttributeKeyMappings map[string]string
 	vTimestampTransformer    TimestampTransformer
 }
 
-func NewDefaultConfig() *DefaultConfigImpl {
-	return &DefaultConfigImpl{
+func NewDefaultConfig() *Config {
+	return &Config{
 		vTimestampTransformer: func(timestamp time.Time) time.Time {
 			return timestamp.UTC()
 		},
 	}
 }
 
-func (c *DefaultConfigImpl) SetTimestampTransformer(transformer TimestampTransformer) {
+func (c *Config) SetTimestampTransformer(transformer TimestampTransformer) {
 	c.vTimestampTransformer = transformer
 }
 
-func (c *DefaultConfigImpl) HandlerOptions() *slog.HandlerOptions {
+func (c *Config) HandlerOptions() *slog.HandlerOptions {
 	replaceAttr := func(_ []string, attr slog.Attr) slog.Attr {
 		if attr.Key == slog.TimeKey {
 			attr.Value = slog.TimeValue(c.vTimestampTransformer(attr.Value.Time()))
@@ -57,7 +57,7 @@ func (c *DefaultConfigImpl) HandlerOptions() *slog.HandlerOptions {
 	}
 }
 
-func (c *DefaultConfigImpl) ConfigItems() []auconfigapi.ConfigItem {
+func (c *Config) ConfigItems() []auconfigapi.ConfigItem {
 	return []auconfigapi.ConfigItem{
 		{
 			Key:         DefaultKeyLogLevel,
@@ -76,7 +76,7 @@ func (c *DefaultConfigImpl) ConfigItems() []auconfigapi.ConfigItem {
 	}
 }
 
-func (c *DefaultConfigImpl) ObtainValues(getter func(string) string) error {
+func (c *Config) ObtainValues(getter func(string) string) error {
 	if vLogLevel, err := level.ParseLogLevel(getter(DefaultKeyLogLevel)); err != nil {
 		return err
 	} else {
