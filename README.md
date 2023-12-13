@@ -21,7 +21,7 @@ every existing [handler](https://pkg.go.dev/log/slog#hdr-Writing_a_handler).
 
 ## Usage
 
-The library is divided into four largely independent areas: 'logging', 'level', 'handlers' and 'handleroptions'.
+The library is divided into three largely independent areas: 'logging', 'level' and 'handlers'.
 
 ### Logging
 
@@ -34,6 +34,20 @@ the system can be established in the following order of priority:
 1. By adding the logger to a context using `mySubCtx := logging.ContextWithLogger(ctx, myLogger)`.
 2. By setting the logger as the default for a new instance through `mySubLogging := myLogging.WithLogger(myLogger)`.
 3. By setting the logger as slog's default logger via `slog.SetDefault(myLogger)`.
+
+#### Resources via ConfigLoader
+
+The package also provides a configuration-based instantiation (compatible with but not limited
+to [go-autumn-configloader](https://github.com/Roshick/go-autumn-configloader)) of different slog resources.
+
+One of the currently supported resources is slog.HandlerOptions, a feature utilized by slog.TextHandler,
+slog.JSONHandler, and various third-party handlers. Users can leverage these options to
+define log levels for handlers and manipulate the attributes of each passing record. This flexibility is especially
+beneficial in scenarios demanding standardized log fields, as demonstrated by
+the [Elastic Common Schema](https://www.elastic.co/guide/en/ecs/current/index.html).
+Additionally, the supplied slog.HandlerOptions map the new log levels to their respective correct string
+values. This proves crucial, given that log/slog defaults to mapping them in relation to the default values —
+illustrated by, for instance, 'PANIC' being emitted as 'ERROR+8'.
 
 ### Level
 
@@ -64,21 +78,6 @@ particularly useful for adding context values to every record, such as tracing i
 
 This handler performs no operations and is employed in situations where neither the context, the logging system, nor
 slog has any logger configured.
-
-### HandlerOptions
-
-This package provides configuration-based instantiation (compatible with but not limited
-to [go-autumn-configloader](https://github.com/Roshick/go-autumn-configloader)) of slog.HandlerOptions, a feature
-utilized by slog.TextHandler,
-slog.JSONHandler, and various third-party handlers. Users can leverage these options to define log levels for handlers
-and manipulate the attributes of each passing record.
-
-This flexibility is especially beneficial in scenarios demanding standardized log fields, as demonstrated by
-the [Elastic Common Schema](https://www.elastic.co/guide/en/ecs/current/index.html). Additionally, the supplied
-slog.HandlerOptions map the new log levels to their respective correct string
-values. This proves crucial, given that log/slog defaults to mapping them in relation to the default values —
-illustrated
-by, for instance, 'PANIC' being emitted as 'ERROR+8'.
 
 ## Examples
 
