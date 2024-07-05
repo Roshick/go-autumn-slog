@@ -53,6 +53,13 @@ func (c *Config) HandlerOptions() *slog.HandlerOptions {
 	}
 }
 
+const DefaultMapping = `{
+  "time": "@timestamp",
+  "level": "log.level",
+  "msg": "message",
+  "error": "error.message"
+}`
+
 func (c *Config) ConfigItems() []auconfigapi.ConfigItem {
 	return []auconfigapi.ConfigItem{
 		{
@@ -72,7 +79,7 @@ func (c *Config) ConfigItems() []auconfigapi.ConfigItem {
 		}, {
 			Key:     DefaultConfigKeyAttributeKeyMappings,
 			EnvName: DefaultConfigKeyAttributeKeyMappings,
-			Default: "{}",
+			Default: DefaultMapping,
 			Description: "Mappings for attribute keys of all logs. \n" +
 				"Example: The entry [error: error.message] maps every attribute with key \"error\" to use the key \"error.message\" instead.",
 			Validate: auconfigapi.ConfigNeedsNoValidation,
