@@ -3,7 +3,7 @@ module github.com/Roshick/go-autumn-slog
 go 1.21
 
 require (
-	github.com/StephanHCB/go-autumn-config-api v0.2.1
+	github.com/StephanHCB/go-autumn-config-api v0.2.2
 	github.com/StephanHCB/go-autumn-logging v0.4.0
 	github.com/stretchr/testify v1.9.0
 )
