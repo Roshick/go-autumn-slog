@@ -1,141 +1,160 @@
 # go-autumn-slog
 
-Built upon the inspiration from go-autumn, this library offers an implementation of
-the [go-autumn-logging](https://github.com/StephanHCB/go-autumn-logging) interface. It leverages the standard Go library
-for structured logging, log/slog.
+Inspired by the go-autumn library, go-autumn-slog offers an implementation of the [go-autumn-logging](https://github.com/StephanHCB/go-autumn-logging) interface. It utilizes the standard Go library for structured logging, log/slog, ensuring seamless integration and compatibility.
 
-## About go-autumn-slog
+## Features
 
-This library seamlessly integrates with the log/slog library, ensuring 100% compatibility and enabling users to utilize
-every existing [handler](https://pkg.go.dev/log/slog#hdr-Writing_a_handler).
+- **Context-Aware Logging**: Enhance logs with contextual information.
+- **Seamless Integration with slog**: Utilizes slog.Logger and slog.Handler.
+- **Respects slog.Default**: Adheres to the default logger for simplicity.
+- **Extended Logging Levels**: Provides finer granularity with additional log levels.
+- **Callback Support**: Allows custom handling via slog.Handler with callbacks.
+- **ConfigLoader Compatibility**: Instantiates slog.HandlerOptions compatible with [go-autumn-configloader](https://github.com/Roshick/go-autumn-configloader).
 
-### Features
+## Table of Contents
 
-* provides context-aware logging
-* consumes slog.Logger and therefore slog.Handler
-* respects slog.Default
-* extends slog.Level for finer granularity
-* provides slog.Handler with callback support
-* provides [go-autumn-configloader](https://github.com/Roshick/go-autumn-configloader) compatible instantiation of
-  slog.HandlerOptions
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+    - [Logging](#logging)
+        - [Resources via ConfigLoader](#resources-via-configloader)
+    - [Level](#level)
+    - [Handlers](#handlers)
+        - [Callback](#callback)
+        - [Noop](#noop)
+- [Examples](#examples)
+    - [Simple Plaintext Logging](#simple-plaintext-logging)
+    - [Structured JSON Logging and Context Awareness](#structured-json-logging-and-context-awareness)
+    - [Tracing](#tracing)
+        - [The Middleware Approach](#the-middleware-approach)
+        - [The Callback Handler Approach](#the-callback-handler-approach)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Installation
+
+To install go-autumn-slog, use the following command:
+
+```sh
+go get github.com/Roshick/go-autumn-slog
+```
 
 ## Usage
 
-The library is divided into three largely independent areas: 'logging', 'level' and 'handlers'.
+go-autumn-slog is divided into three primary areas: Loggers, Levels, and Handlers.
 
 ### Logging
 
-A simple invocation of `myLogging := logging.New()` is all that's required to generate a functional instance of the
-logging system.
+Creating a logging instance is simple:
 
-Given a slog.Handler 'myHandler' and a *slog.Logger `myLogger := slog.New(myHandler)`, the preferred logger utilized by
-the system can be established in the following order of priority:
+```go
+myLogging := logging.New()
+```
 
-1. By adding the logger to a context using `mySubCtx := logging.ContextWithLogger(ctx, myLogger)`.
-2. By setting the logger as the default for a new instance through `mySubLogging := myLogging.WithLogger(myLogger)`.
-3. By setting the logger as slog's default logger via `slog.SetDefault(myLogger)`.
+Given a `slog.Handler` named `myHandler` and a `*slog.Logger` named `myLogger`:
+
+```go
+myLogger := slog.New(myHandler)
+```
+
+Setting the preferred logger can be prioritized in three ways:
+
+1. Attach the logger to a context:
+   ```go
+   mySubCtx := logging.ContextWithLogger(ctx, myLogger)
+   ```
+
+2. Set the logger as the default for a new instance:
+   ```go
+   mySubLogging := myLogging.WithLogger(myLogger)
+   ```
+
+3. Set the logger as slog's default logger:
+   ```go
+   slog.SetDefault(myLogger)
+   ```
 
 #### Resources via ConfigLoader
 
-The package also provides a configuration-based instantiation (compatible with but not limited
-to [go-autumn-configloader](https://github.com/Roshick/go-autumn-configloader)) of different slog resources.
+The package provides configuration-based instantiation of various slog resources, compatible with [go-autumn-configloader](https://github.com/Roshick/go-autumn-configloader).
 
-One of the currently supported resources is slog.HandlerOptions, a feature utilized by slog.TextHandler,
-slog.JSONHandler, and various third-party handlers. Users can leverage these options to
-define log levels for handlers and manipulate the attributes of each passing record. This flexibility is especially
-beneficial in scenarios demanding standardized log fields, as demonstrated by
-the [Elastic Common Schema](https://www.elastic.co/guide/en/ecs/current/index.html).
-Additionally, the supplied slog.HandlerOptions map the new log levels to their respective correct string
-values. This proves crucial, given that log/slog defaults to mapping them in relation to the default values —
-illustrated by, for instance, 'PANIC' being emitted as 'ERROR+8'.
+Supported resources include `slog.HandlerOptions`, which are used by `slog.TextHandler`, `slog.JSONHandler`, and third-party handlers. This allows users to define log levels and manipulate record attributes, useful in standardized logging scenarios, like those defined by the [Elastic Common Schema](https://www.elastic.co/guide/en/ecs/current/index.html). The `slog.HandlerOptions` also map new log levels to their respective string values, preventing incorrect level mappings.
 
 ### Level
 
-This library expands the default slog.Levels to include the following severity levels, arranged in ascending order:
+Expands the default slog levels to include:
 
-1. Trace
-2. Debug
-3. Info
-4. Warn
-5. Error
-6. Fatal
-7. Panic
-8. Silent
+1. **Trace**
+2. **Debug**
+3. **Info**
+4. **Warn**
+5. **Error**
+6. **Fatal**
+7. **Panic**
+8. **Silent**
 
 ### Handlers
 
-The custom handlers provided by this library are designed to be used as standalone components and are entirely
-independent of the need to utilize the entire logging implementation.
+Custom handlers provided by this library can be used independently of the entire logging implementation.
 
 #### Callback
 
-This handler functions as a wrapper for another handler, enabling the registration of callback
-functions of the type `func(ctx context.Context, record *slog.Record) error`. These
-callbacks have the ability to access the current context and manipulate the current slog.Record. This handler is
-particularly useful for adding context values to every record, such as tracing information.
+A handler that wraps another handler, allowing registration of callback functions of the type `func(ctx context.Context, record *slog.Record) error`. These callbacks can modify the slog record and add context values, useful for adding consistent tracing information.
 
 #### Noop
 
-This handler performs no operations and is employed in situations where neither the context, the logging system, nor
-slog has any logger configured.
+A no-op handler that performs no operations, useful in cases where there is no configured logger in the context, the logging system, or slog.
 
 ## Examples
 
-This section delves into practical use cases to aid the integration of the library into various applications.
+Below are practical examples to help integrate the library into various applications.
 
 ### Simple Plaintext Logging
 
-```
-	// create a simple plaintext logger and set the autumn global default logger to it
-	aulogging.Logger = logging.New()
+```go
+// Create a simple plaintext logger and set the autumn global default logger to it
+aulogging.Logger = logging.New()
 
-	// use it
-	aulogging.Logger.NoCtx().Info().Print("hello")
+// Use it
+aulogging.Logger.NoCtx().Info().Print("hello")
 ```
 
 ### Structured JSON Logging and Context Awareness
 
-```
-	// build a structured logger using the standard slog.NewJSONHandler (could use any other slog.Handler)
-	structuredLogger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+```go
+// Build a structured logger using slog.NewJSONHandler
+structuredLogger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
-	// set the autumn global default logger to it
-	aulogging.Logger = logging.New().WithLogger(structuredLogger)
+// Set the autumn global default logger to it
+aulogging.Logger = logging.New().WithLogger(structuredLogger)
 
-	// use it (chain style or convenience style)
-	aulogging.Logger.NoCtx().Info().Print("hello")
-	aulogging.Info(context.Background(), "hello, too")
+// Use it (chain style or convenience style)
+aulogging.Logger.NoCtx().Info().Print("hello")
+aulogging.Info(context.Background(), "hello, too")
 
-	// augment the logger with an extra field (could be done in a middleware, as long as the field value won't change)
-	augmentedLogger := structuredLogger.With("some-field", "some-value")
+// Augment the logger with an extra field
+augmentedLogger := structuredLogger.With("some-field", "some-value")
 
-	// place it in a context (could be done in a middleware)
-	ctx := context.Background()
-	ctx = logging.ContextWithLogger(ctx, augmentedLogger)
+// Place it in a context
+ctx := context.Background()
+ctx = logging.ContextWithLogger(ctx, augmentedLogger)
 
-	// use it from the context (chain style or convenience style)
-	aulogging.Logger.Ctx(ctx).Info().Print("hi")
-	aulogging.Info(ctx, "hi, again")
+// Use it from the context (chain style or convenience style)
+aulogging.Logger.Ctx(ctx).Info().Print("hi")
+aulogging.Info(ctx, "hi, again")
 ```
 
 ### Tracing
 
-Consider a scenario where we aim to append tracing information to every log record generated during a request to one of
-our services. Assuming we have incorporated a middleware (either third-party or self-written) that appends a trace-id
-and span-id to our context, the next step is to propagate this information to our logger.
-
-With this library, there are essentially two recommended approaches to achieve our goal.
+Add tracing information to every log record generated during a request to a service:
 
 #### The Middleware Approach
 
-If we can register our middleware to execute after the one responsible for adding tracing information, and if this
-information remains constant throughout the context's lifetime, we can directly include this data into a sub-logger
-within our middleware and attach it to our context:
+Add constant tracing information within a middleware:
 
-```
+```go
 myLogger := logging.FromContext(ctx)
-if myLogger != nil {
-    // if context has no logger attached, obtain logger (e.g. from slog.Default, logging instance or simply create a new one)
+if myLogger == nil {
     myHandler := slog.NewJSONHandler(os.Stdout, nil)
     myLogger = slog.New(myHandler)
 }
@@ -145,10 +164,9 @@ ctx = logging.ContextWithLogger(ctx, myLogger)
 
 #### The Callback Handler Approach
 
-If the information within the context might change during its lifetime, opting for the callback handler, despite being
-slightly slower, offers a safer solution.
+For dynamic context information, use the callback handler:
 
-```
+```go
 myHandler := slog.NewJSONHandler(os.Stdout, nil)
 myCallbackHandler := callbackhandler.New(myHandler)
 err := myCallbackHandler.RegisterContextCallback(func(ctx context.Context, record *slog.Record) error {
@@ -156,9 +174,16 @@ err := myCallbackHandler.RegisterContextCallback(func(ctx context.Context, recor
     return nil
 }, "add-tracing-attributes")
 if err != nil {
-    return err
+    log.Fatalf("Failed to register callback: %v", err)
 }
 myLogger := slog.New(myCallbackHandler)
-// use logger as slog.Default, add it to our logging instance or attach it to a context
 slog.SetDefault(myLogger)
 ```
+
+## Contributing
+
+Contributions are welcome! Please fork the repository, submit a pull request, or open an issue for any bugs or feature requests.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
