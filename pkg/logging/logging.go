@@ -123,7 +123,9 @@ type withLevel struct {
 }
 
 func (w *withLevel) WithErr(err error) auloggingapi.LeveledLoggingImplementation {
-	w.logger = w.logger.With(ErrorKey, err.Error())
+	if err != nil {
+		w.logger = w.logger.With(ErrorKey, err.Error())
+	}
 	return w
 }
 
