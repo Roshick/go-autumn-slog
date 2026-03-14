@@ -9,7 +9,6 @@ Inspired by the go-autumn library, go-autumn-slog offers an implementation of th
 - **Respects slog.Default**: Adheres to the default logger for simplicity.
 - **Extended Logging Levels**: Provides finer granularity with additional log levels.
 - **Callback Support**: Allows custom handling via slog.Handler with callbacks.
-- **ConfigLoader Compatibility**: Instantiates slog.HandlerOptions compatible with [go-autumn-configloader](https://github.com/Roshick/go-autumn-configloader).
 
 ## Table of Contents
 
@@ -17,7 +16,7 @@ Inspired by the go-autumn library, go-autumn-slog offers an implementation of th
 - [Installation](#installation)
 - [Usage](#usage)
     - [Logging](#logging)
-        - [Resources via ConfigLoader](#resources-via-configloader)
+        - [Configuration via Environment Variables](#configuration-via-environment-variables)
     - [Level](#level)
     - [Handlers](#handlers)
         - [Callback](#callback)
@@ -28,6 +27,7 @@ Inspired by the go-autumn library, go-autumn-slog offers an implementation of th
     - [Tracing](#tracing)
         - [The Middleware Approach](#the-middleware-approach)
         - [The Callback Handler Approach](#the-callback-handler-approach)
+    - [Environment-Based Logger Creation](#environment-based-logger-creation)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -74,12 +74,6 @@ Setting the preferred logger can be prioritized in three ways:
    slog.SetDefault(myLogger)
    ```
 
-#### Resources via ConfigLoader
-
-The package provides configuration-based instantiation of various slog resources, compatible with [go-autumn-configloader](https://github.com/Roshick/go-autumn-configloader).
-
-Supported resources include `slog.HandlerOptions`, which are used by `slog.TextHandler`, `slog.JSONHandler`, and third-party handlers. This allows users to define log levels and manipulate record attributes, useful in standardized logging scenarios, like those defined by the [Elastic Common Schema](https://www.elastic.co/guide/en/ecs/current/index.html). The `slog.HandlerOptions` also map new log levels to their respective string values, preventing incorrect level mappings.
-
 ### Level
 
 Expands the default slog levels to include:
@@ -104,6 +98,40 @@ A handler that wraps another handler, allowing registration of callback function
 #### Noop
 
 A no-op handler that performs no operations, useful in cases where there is no configured logger in the context, the logging system, or slog.
+
+### Configuration
+
+Configuration for go-autumn-slog can be done through environment variables, allowing for flexible and dynamic log management.
+
+#### Configuration via Environment Variables
+
+The package supports configuration through environment variables using the `caarlos0/env` library.
+
+Set the following environment variables to configure logging:
+
+- `LOG_STYLE`: The log output style ("PLAIN" or "JSON").
+- `LOG_LEVEL`: The minimum log level (e.g., "INFO", "DEBUG", "FATAL").
+- `LOG_TIME_TRANSFORMER`: How to transform timestamps ("UTC" or "ZERO").
+- `LOG_ATTRIBUTE_KEY_MAPPINGS`: A JSON string mapping attribute keys (e.g., `{"time":"@timestamp","level":"log.level","msg":"message","error":"error.message"}`).
+
+Example:
+
+```bash
+export LOG_STYLE="JSON"
+export LOG_LEVEL="INFO"
+export LOG_TIME_TRANSFORMER="UTC"
+export LOG_ATTRIBUTE_KEY_MAPPINGS='{"time":"@timestamp","level":"log.level","msg":"message","error":"error.message"}'
+```
+
+To load the configuration and create a logger:
+
+```go
+logger, err := logging.NewLoggerFromEnv()
+if err != nil {
+    panic("failed to create logger: " + err.Error())
+}
+slog.SetDefault(logger)
+```
 
 ## Examples
 
@@ -178,6 +206,21 @@ if err != nil {
 }
 myLogger := slog.New(myCallbackHandler)
 slog.SetDefault(myLogger)
+```
+
+### Environment-Based Logger Creation
+
+Create a logger directly from environment variables:
+
+```go
+logger, err := logging.NewLoggerFromEnv()
+if err != nil {
+    panic("failed to create logger: " + err.Error())
+}
+slog.SetDefault(logger)
+
+// Now use slog as usual
+slog.Info("This is an info message")
 ```
 
 ## Contributing
