@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	callbackhandler "github.com/Roshick/go-autumn-slog/pkg/handlers/callback"
+	callbackhandler "github.com/Roshick/go-autumn-slog/handlers/callback"
 	"github.com/stretchr/testify/assert"
 )
 

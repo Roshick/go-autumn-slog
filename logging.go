@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 
-	noophandler "github.com/Roshick/go-autumn-slog/pkg/handlers/noop"
-	"github.com/Roshick/go-autumn-slog/pkg/level"
+	noophandler "github.com/Roshick/go-autumn-slog/handlers/noop"
+	"github.com/Roshick/go-autumn-slog/level"
 
 	auloggingapi "github.com/StephanHCB/go-autumn-logging/api"
 )
@@ -14,6 +15,18 @@ import (
 const (
 	ErrorKey = "error"
 )
+
+func NewLoggerFromEnv() (*slog.Logger, error) {
+	config := NewConfig()
+	if err := config.ObtainValuesFromEnv(); err != nil {
+		return nil, fmt.Errorf("failed to obtain logger config values from environment: %w", err)
+	}
+
+	if config.LogStyle == LogStyleJSON {
+		return slog.New(slog.NewJSONHandler(os.Stderr, config.HandlerOptions())), nil
+	}
+	return slog.New(slog.NewTextHandler(os.Stderr, config.HandlerOptions())), nil
+}
 
 type Logging struct {
 	logger *slog.Logger
