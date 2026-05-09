@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/StephanHCB/go-autumn-logging v0.4.0
-	github.com/caarlos0/env/v11 v11.4.0
+	github.com/caarlos0/env/v11 v11.4.1
 	github.com/stretchr/testify v1.11.1
 )
 
